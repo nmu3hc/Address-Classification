@@ -171,9 +171,9 @@ def edit_distance(str1: str, str2: str) -> int:
             cost = 0
         else:
             cost = 1
-        res = min(dp(i - 1, j) + 1,      # Deletion
-                  dp(i, j - 1) + 1,      # Insertion
-                  dp(i - 1, j - 1) + cost)  # Substitution
+        res = min(dp(i - 1, j) + 1,      
+                  dp(i, j - 1) + 1,      
+                  dp(i - 1, j - 1) + cost)  
 
         memo[(i, j)] = res
         return res
@@ -238,12 +238,12 @@ def find_ward(list_ward, input):
     results = list_ward.search_with_edit_distance(preprocess_string(input), ward_edit_distance_threshold)
     return min(results, key=lambda x: x[1])[0] if results else ""
 
-def find_address_components(input):
+def find_address_components(input, list_province, list_district, list_ward):
     #process input
     process_input = preprocess_string(input).split(" ")
     len_input = len(process_input)
     # load data from database
-    list_province, list_district, list_ward = load_data()
+    
 
     province, district, ward = "", "", ""
     province_found, ward_found = "", ""
@@ -281,8 +281,8 @@ def measure_runtime(func, *args, **kwargs):
 if __name__ == '__main__':
 
     input = "Xã Bình Phan, huyện Chợ Gạo, tỉnh Tiền Giang"
-        
-    result, runtime = measure_runtime(find_address_components, input)
+    list_province, list_district, list_ward = load_data()    
+    result, runtime = measure_runtime(find_address_components, input, list_province, list_district, list_ward)
 
     print(f"Result: {result}")
     print(f"Runtime: {runtime} seconds")
