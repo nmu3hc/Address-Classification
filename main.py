@@ -74,7 +74,7 @@ def vietnamese_normalize_dialect(text: str) -> str:
         # Using VNI embedding 
         converted_text = ''.join(vni_map.get(char, char) for char in text)
     else:
-        pass
+        converted_text = text
         # MISRA shenanigans ~~~
     return converted_text
 
