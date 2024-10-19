@@ -11,6 +11,12 @@ ways to embed dialects\n
 possible values: "telex", "vni", "none"
 """
 
+search_algorithm = "edit_distance"
+"""
+The search algorithm to use\n
+possible values: "levenshtein", "edit_distance"
+"""
+
 province_edit_distance_threshold = 5
 """
 The maximum edit distance to search for provinces\n
@@ -104,6 +110,7 @@ class Trie:
     """
     def __init__(self)-> None:
         self.root = TrieNode()
+        self.max_edit_distance = province_edit_distance_threshold
 
     def insert(self, word, full_name)-> bool:
         """
@@ -121,6 +128,13 @@ class Trie:
         node.full_name = full_name
         return True
 
+    def search(self, word: str)-> str:
+        if search_algorithm == "levenshtein":
+            return self.search_laveshtein_distance(word)
+        elif search_algorithm == "edit_distance":
+            return self.search_with_edit_distance(word, self.max_edit_distance, 5)
+        return self.search_laveshtein_distance(word)
+
     def search_with_edit_distance(self, word: str, max_distance: int, max_results: int = 5)->list[tuple]:
         """
         Search for a word in the Trie with edit distance\n
@@ -131,7 +145,7 @@ class Trie:
         """
         results = []
         self._search_recursive(self.root, '', word, results, max_distance, max_results)
-        return results[:max_results]
+        return min(results, key=lambda x: x[1])[0] if results else ""
 
     def _search_recursive(self, node, current_word, target_word, results, max_distance, max_results):
         if node.is_end_of_word:
@@ -147,15 +161,31 @@ class Trie:
         for char in node.children:
             self._search_recursive(node.children[char], current_word + char, target_word, results, max_distance, max_results)
 
+    def search_laveshtein_distance(self, word):
+        return self._search_recursive_laveshtein_distance(self.root, word, "", float('inf'), "")
+    
+    def _search_recursive_laveshtein_distance(self, node, word, current, min_distance, best_match):
+        if node.is_end_of_word:
+            distance = levenshtein_distance(word, current)
+            if distance < min_distance:
+                min_distance = distance
+                best_match = node.full_name
+        for char, next_node in node.children.items():
+            result = self._search_recursive_laveshtein_distance(next_node, word, current + char, min_distance, best_match)
+            if result[1] < min_distance:
+                min_distance = result[1]
+                best_match = result[0]
+        return best_match, min_distance
+
 
 def edit_distance(str1: str, str2: str) -> int:
     """
-    Function to calculate the edit distance between two strings\n
-    Input:    str1 : str - The first string\n
-              str2 : str - The second string\n
-    Output:          int - The edit distance between the two strings\n
+    Function to calculate the edit distance between two strings
+    Input:    str1 : str - The first string
+              str2 : str - The second string
+    Output:          int - The edit distance between the two strings
 
-    function use dynamic programming to possibly reduce the time complexity\n
+    function use dynamic programming to possibly reduce the time complexity
     TODO: test if time complexity is reduced
     TODO: Add option to modify the costs of insertion, deletion, substitution
     """
@@ -178,6 +208,22 @@ def edit_distance(str1: str, str2: str) -> int:
         memo[(i, j)] = res
         return res
     return dp(len(str1), len(str2))
+
+def levenshtein_distance(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+    if len(s1) == 0:
+        return len(s2)
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    return previous_row[-1]
 
 def load_data_to_Trie(file_name: str) -> Trie:
     """
@@ -215,8 +261,7 @@ def find_province(list_province, input):
               input : str - The input to search\n
     Output:            str - The likely province\n
     """
-    results = list_province.search_with_edit_distance(preprocess_string(input), province_edit_distance_threshold)
-    return min(results, key=lambda x: x[1])[0] if results else ""
+    return list_province.search(preprocess_string(input))
 
 def find_district(list_district, input):
     """
@@ -225,8 +270,8 @@ def find_district(list_district, input):
               input : str - The input to search\n
     Output:            str - The likely district\n
     """
-    results = list_district.search_with_edit_distance(preprocess_string(input), district_edit_distance_threshold)
-    return min(results, key=lambda x: x[1])[0] if results else ""
+    return list_district.search(preprocess_string(input))
+
 
 def find_ward(list_ward, input):
     """
@@ -235,8 +280,8 @@ def find_ward(list_ward, input):
               input : str - The input to search\n
     Output:            str - The likely ward\n
     """
-    results = list_ward.search_with_edit_distance(preprocess_string(input), ward_edit_distance_threshold)
-    return min(results, key=lambda x: x[1])[0] if results else ""
+    return list_ward.search(preprocess_string(input))
+   
 
 def find_address_components(input, list_province, list_district, list_ward):
     #process input
@@ -281,7 +326,10 @@ def measure_runtime(func, *args, **kwargs):
 if __name__ == '__main__':
 
     input = "Xã Bình Phan, huyện Chợ Gạo, tỉnh Tiền Giang"
-    list_province, list_district, list_ward = load_data()    
+    list_province, list_district, list_ward = load_data()  
+    list_province.max_edit_distance = province_edit_distance_threshold 
+    list_district.max_edit_distance = district_edit_distance_threshold
+    list_ward.max_edit_distance = ward_edit_distance_threshold 
     result, runtime = measure_runtime(find_address_components, input, list_province, list_district, list_ward)
 
     print(f"Result: {result}")
