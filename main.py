@@ -291,7 +291,7 @@ def load_data_to_Trie(file_name: str) -> Trie:
     Preprocess the word before inserting with the preprocess_string function
     """
     trie = Trie()
-    with open(file_name, 'r') as file:
+    with open(file_name, 'r', encoding='utf-8') as file:
         for line in  file.readlines():
             line = line.strip()
             trie.insert(preprocess_string(line), line)
