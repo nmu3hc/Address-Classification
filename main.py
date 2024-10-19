@@ -41,6 +41,12 @@ The search algorithm to use\n
 possible values: "levenshtein", "edit_distance"
 """
 
+input_separate_algorithm = "brute_force"
+"""
+The algorithm to separate the input\n
+possible values: "brute_force"
+"""
+
 province_edit_distance_threshold = 5
 """
 The maximum edit distance to search for provinces\n
@@ -276,6 +282,9 @@ def load_data():
     list_province = load_data_to_Trie('list_province.txt')
     list_district = load_data_to_Trie('list_district.txt')
     list_ward = load_data_to_Trie('list_ward.txt')
+    list_province.max_edit_distance = province_edit_distance_threshold 
+    list_district.max_edit_distance = district_edit_distance_threshold
+    list_ward.max_edit_distance = ward_edit_distance_threshold 
     return list_province, list_district, list_ward
 
 def find_province(list_province, input):
@@ -307,7 +316,7 @@ def find_ward(list_ward, input):
     return list_ward.search(preprocess_string(input))
    
 
-def find_address_components(input, list_province, list_district, list_ward):
+def find_address_components_brute_force(input, list_province, list_district, list_ward):
     #process input
     process_input = preprocess_string(input).split(" ")
     len_input = len(process_input)
@@ -350,11 +359,11 @@ def measure_runtime(func, *args, **kwargs):
 if __name__ == '__main__':
 
     input = "Xã Bình Phan, huyện Chợ Gạo, tỉnh Tiền Giang"
-    list_province, list_district, list_ward = load_data()  
-    list_province.max_edit_distance = province_edit_distance_threshold 
-    list_district.max_edit_distance = district_edit_distance_threshold
-    list_ward.max_edit_distance = ward_edit_distance_threshold 
-    result, runtime = measure_runtime(find_address_components, input, list_province, list_district, list_ward)
+    
+    list_province, list_district, list_ward = load_data() 
+    
+    if input_separate_algorithm == "brute_force": 
+        result, runtime = measure_runtime(find_address_components_brute_force, input, list_province, list_district, list_ward)
 
     print(f"Result: {result}")
     print(f"Runtime: {runtime} seconds")
