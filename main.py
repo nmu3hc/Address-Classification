@@ -60,6 +60,32 @@ ward_edit_distance_threshold = 5
 The maximum edit distance to search forwards\n
 """
 
+debug = "VERBOSE"
+"""
+debug options\n 
+possible values: "VERBOSE", "NORMAL", "QUIET"
+"""
+
+#####################################################################
+######## This section contains fucntions for processing Data ########
+#####################################################################
+
+def get_all_parameters() -> str:
+    return{
+        "preprocess_string_dialect": preprocess_string_dialect,
+        "search_algorithm": search_algorithm,
+        "input_separate_algorithm": input_separate_algorithm,
+        "province_edit_distance_threshold": province_edit_distance_threshold,
+        "district_edit_distance_threshold": district_edit_distance_threshold,
+        "ward_edit_distance_threshold": ward_edit_distance_threshold
+    }
+def measure_runtime(func, *args, **kwargs):
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    return result, elapsed_time
+
 #####################################################################
 ######## This section contains fucntions for processing Data ########
 #####################################################################
@@ -349,30 +375,28 @@ def find_address_components_brute_force(input, list_province, list_district, lis
         "ward": ward
     }
 
-def measure_runtime(func, *args, **kwargs):
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    return result, elapsed_time
+def main(input):
+    list_province, list_district, list_ward = load_data()
+    if input_separate_algorithm == "brute_force": 
+        return measure_runtime(find_address_components_brute_force, input, list_province, list_district, list_ward)
+    
 
 if __name__ == '__main__':
 
     input = "Xã Bình Phan, huyện Chợ Gạo, tỉnh Tiền Giang"
     
-    list_province, list_district, list_ward = load_data() 
-    
-    if input_separate_algorithm == "brute_force": 
-        result, runtime = measure_runtime(find_address_components_brute_force, input, list_province, list_district, list_ward)
+    search_algorithm = "edit_distance"
+    result, runtime = main(input)   
 
-    print(f"Result: {result}")
-    print(f"Runtime: {runtime} seconds")
+    if debug == "VERBOSE":
+        print(get_all_parameters())
+        print(f"Result: {result}")
+        print(f"Runtime: {runtime} seconds")
 
+    search_algorithm = "lavenshtein"
+    result, runtime = main(input)   
 
-
-
-
-
-
-
-
+    if debug == "VERBOSE":
+        print(get_all_parameters())
+        print(f"Result: {result}")
+        print(f"Runtime: {runtime} seconds")
