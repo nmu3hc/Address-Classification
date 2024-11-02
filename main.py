@@ -22,96 +22,29 @@
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+
+# NOTE: you CAN change this cell
+# import your library here
 import re
 import time
+import unicodedata
 
-#####################################################################
-################## This section contains Parameters #################
-#####################################################################
+# NOTE: you MUST change this cell
+# New methods / functions must be written under class Solution.
+class Solution:
+    def __init__(self):
+        # list provice, district, ward for private test, do not change for any reason
 
-preprocess_string_dialect = "telex"
-"""
-ways to embed dialects\n
-possible values: "telex", "vni", "none"
-"""
+        self.province_path = 'list_province.txt'
+        self.district_path = 'list_district.txt'
+        self.ward_path = 'list_ward.txt'
 
-search_algorithm = "edit_distance"
-"""
-The search algorithm to use\n
-possible values: "levenshtein", "edit_distance"
-"""
+        # write your preprocess here, add more method if needed
+        self.trie_province = self.build_trie_with_abbreviations('list_province.txt', type="province")
+        self.trie_district = self.build_trie('list_district.txt')
+        self.trie_ward = self.build_trie('list_ward.txt')
+        pass
 
-input_separate_algorithm = "brute_force"
-"""
-The algorithm to separate the input\n
-possible values: "brute_force"
-"""
-
-province_edit_distance_threshold = 5
-"""
-The maximum edit distance to search for provinces\n
-"""
-district_edit_distance_threshold = 5
-"""
-The maximum edit distance to search for districts\n
-"""
-ward_edit_distance_threshold = 5
-"""
-The maximum edit distance to search forwards\n
-"""
-
-debug = "VERBOSE"
-"""
-debug options\n 
-possible values: "VERBOSE", "NORMAL", "QUIET"
-"""
-
-#####################################################################
-######## This section contains fucntions for processing Data ########
-#####################################################################
-
-def get_all_parameters() -> str:
-    return{
-        "preprocess_string_dialect": preprocess_string_dialect,
-        "search_algorithm": search_algorithm,
-        "input_separate_algorithm": input_separate_algorithm,
-        "province_edit_distance_threshold": province_edit_distance_threshold,
-        "district_edit_distance_threshold": district_edit_distance_threshold,
-        "ward_edit_distance_threshold": ward_edit_distance_threshold
-    }
-def measure_runtime(func, *args, **kwargs):
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    return result, elapsed_time
-
-#####################################################################
-######## This section contains fucntions for processing Data ########
-#####################################################################
-
-def vietnamese_normalize_dialect(text: str) -> str:
-    """
-    Function to convert Vietnamese characters to normal characters\n
-    Input:    text : str - The text to convert\n
-    Output:          str - The converted text\n
-    Can be manipulated by changing the preprocess_string_dialect parameter 
-    """
-    telex_map = {
-        'ă': 'aw', 'ắ': 'aws', 'ằ': 'awf', 'ẳ': 'awr', 'ẵ': 'awx', 'ặ': 'awj',
-        'â': 'aa', 'ấ': 'aas', 'ầ': 'aaf', 'ẩ': 'aar', 'ẫ': 'aax', 'ậ': 'aaj',
-        'á': 'as','á': 'as', 'à': 'af', 'ả': 'ar', 'ã': 'ax', 'ạ': 'aj',
-        'é': 'es', 'è': 'ef', 'ẻ': 'er', 'ẽ': 'ex', 'ẹ': 'ej',
-        'ê': 'ee', 'ế': 'ees', 'ề': 'eef', 'ể': 'eer', 'ễ': 'eex', 'ệ': 'eej',
-        'í': 'is', 'ì': 'if', 'ỉ': 'ir', 'ĩ': 'ix', 'ị': 'ij',
-        'ó': 'os', 'ò': 'of', 'ỏ': 'or', 'õ': 'ox', 'ọ': 'oj',
-        'ô': 'oo', 'ố': 'oos', 'ồ': 'oof', 'ổ': 'oor', 'ỗ': 'oox', 'ộ': 'ooj',
-        'ơ': 'ow', 'ớ': 'ows', 'ờ': 'owf', 'ở': 'owr', 'ỡ': 'owx', 'ợ': 'owj',
-        'ú': 'us', 'ù': 'uf', 'ủ': 'ur', 'ũ': 'ux', 'ụ': 'uj',
-        'ư': 'uw', 'ứ': 'uws', 'ừ': 'uwf', 'ử': 'uwr', 'ữ': 'uwx', 'ự': 'uwj',
-        'ý': 'ys', 'ỳ': 'yf', 'ỷ': 'yr', 'ỹ': 'yx', 'ỵ': 'yj',
-        'đ': 'dd'
-    }
     vni_map = {
         'ă': 'a8', 'ắ': 'a81', 'ằ': 'a82', 'ẳ': 'a83', 'ẵ': 'a84', 'ặ': 'a85',
         'â': 'a6', 'ấ': 'a61', 'ầ': 'a62', 'ẩ': 'a63', 'ẫ': 'a64', 'ậ': 'a65',
@@ -127,276 +60,362 @@ def vietnamese_normalize_dialect(text: str) -> str:
         'ý': 'y1', 'ỳ': 'y2', 'ỷ': 'y3', 'ỹ': 'y4', 'ỵ': 'y5',
         'đ': 'd9'
     }
-    
-    # Convert the text
-    if preprocess_string_dialect == "telex":
-        # Using Telex embedding 
-        converted_text = ''.join(telex_map.get(char, char) for char in text)
-    elif preprocess_string_dialect == "vni":
-        # Using VNI embedding 
-        converted_text = ''.join(vni_map.get(char, char) for char in text)
-    else:
-        converted_text = text
-        # MISRA shenanigans ~~~
-    return converted_text
-
-def preprocess_string(text: str) -> str:
-    # Remove special characters and convert to lowercase
-    normalized = re.sub(r'[^\w\s]', '', text).lower().strip()
-    return vietnamese_normalize_dialect(normalized)
-
-
-#####################################################################
-############# This section contains Trie implementation #############
-#####################################################################
-
-class TrieNode:
-    def __init__(self):
-        """
-        Trie Node class\n
-        Full name of the word is stored in the end of node\n
-        """
-        self.children = {}
-        self.is_end_of_word = False
-        self.full_name = None
-
-class Trie:
-    """
-    Trie implementation in Python with insert and search functions
-    """
-    def __init__(self)-> None:
-        self.root = TrieNode()
-        self.max_edit_distance = province_edit_distance_threshold
-
-    def insert(self, word, full_name)-> bool:
-        """
-        Insert a word into the Trie\n
-        Input:    word : str - The word to insert\n
-                  full_name : str - The full name of the word\n
-        Output:   bool - True if the word is inserted successfully\n
-        """
-        node = self.root
-        for char in word:
-            if char not in node.children:
-                node.children[char] = TrieNode()
-            node = node.children[char]
-        node.is_end_of_word = True
-        node.full_name = full_name
-        return True
-
-    def search(self, word: str)-> str:
-        if search_algorithm == "levenshtein":
-            return self.search_laveshtein_distance(word)
-        elif search_algorithm == "edit_distance":
-            return self.search_with_edit_distance(word, self.max_edit_distance, 5)
-        return self.search_laveshtein_distance(word)
-
-    def search_with_edit_distance(self, word: str, max_distance: int, max_results: int = 5)->list[tuple]:
-        """
-        Search for a word in the Trie with edit distance\n
-        Input:    word : str - The word to search\n
-                  max_distance : int - The maximum edit distance\n
-                  max_results : int - The maximum number of results to return\n
-        Output:   list[tuple] - The list of results with the format (full_name, distance)\n
-        """
-        results = []
-        self._search_recursive(self.root, '', word, results, max_distance, max_results)
-        return min(results, key=lambda x: x[1])[0] if results else ""
-
-    def _search_recursive(self, node, current_word, target_word, results, max_distance, max_results):
-        if node.is_end_of_word:
-            distance = edit_distance(current_word, target_word)
-            if distance <= max_distance:
-                results.append((node.full_name, distance))
-                if len(results) >= max_results:
-                    return
-
-        if len(results) >= max_results:
-            return
-
-        for char in node.children:
-            self._search_recursive(node.children[char], current_word + char, target_word, results, max_distance, max_results)
-
-    def search_laveshtein_distance(self, word):
-        return self._search_recursive_laveshtein_distance(self.root, word, "", float('inf'), "")
-    
-    def _search_recursive_laveshtein_distance(self, node, word, current, min_distance, best_match):
-        if node.is_end_of_word:
-            distance = levenshtein_distance(word, current)
-            if distance < min_distance:
-                min_distance = distance
-                best_match = node.full_name
-        for char, next_node in node.children.items():
-            result = self._search_recursive_laveshtein_distance(next_node, word, current + char, min_distance, best_match)
-            if result[1] < min_distance:
-                min_distance = result[1]
-                best_match = result[0]
-        return best_match, min_distance
-
-
-def edit_distance(str1: str, str2: str) -> int:
-    """
-    Function to calculate the edit distance between two strings
-    Input:    str1 : str - The first string
-              str2 : str - The second string
-    Output:          int - The edit distance between the two strings
-
-    function use dynamic programming to possibly reduce the time complexity
-    TODO: test if time complexity is reduced
-    TODO: Add option to modify the costs of insertion, deletion, substitution
-    """
-    memo = {}
-    def dp(i, j):
-        if (i, j) in memo:
-            return memo[(i, j)]
-        if i == 0:
-            return j
-        if j == 0:
-            return i
-        if str1[i - 1] == str2[j - 1]:
-            cost = 0
-        else:
-            cost = 1
-        res = min(dp(i - 1, j) + 1,      
-                  dp(i, j - 1) + 1,      
-                  dp(i - 1, j - 1) + cost)  
-
-        memo[(i, j)] = res
-        return res
-    return dp(len(str1), len(str2))
-
-def levenshtein_distance(s1, s2):
-    if len(s1) < len(s2):
-        return levenshtein_distance(s2, s1)
-    if len(s1) == 0:
-        return len(s2)
-    previous_row = range(len(s2) + 1)
-    for i, c1 in enumerate(s1):
-        current_row = [i + 1]
-        for j, c2 in enumerate(s2):
-            insertions = previous_row[j + 1] + 1
-            deletions = current_row[j] + 1
-            substitutions = previous_row[j] + (c1 != c2)
-            current_row.append(min(insertions, deletions, substitutions))
-        previous_row = current_row
-    return previous_row[-1]
-
-def load_data_to_Trie(file_name: str) -> Trie:
-    """
-    Load data from a file to a Trie\n
-    Input:    file_name : str - The name of the file\n
-    Output:          Trie - The Trie containing the data\n
-
-    Each line in the file is a word to insert into the Trie\n
-    Preprocess the word before inserting with the preprocess_string function
-    """
-    trie = Trie()
-    with open(file_name, 'r') as file:
-        for line in  file.readlines():
-            line = line.strip()
-            trie.insert(preprocess_string(line), line)
-    return trie
-
-#####################################################################
-########################### Main pipeline ###########################
-#####################################################################
-
-def load_data():
-    """
-    Load data from database\n
-    """
-    list_province = load_data_to_Trie('list_province.txt')
-    list_district = load_data_to_Trie('list_district.txt')
-    list_ward = load_data_to_Trie('list_ward.txt')
-    list_province.max_edit_distance = province_edit_distance_threshold 
-    list_district.max_edit_distance = district_edit_distance_threshold
-    list_ward.max_edit_distance = ward_edit_distance_threshold 
-    return list_province, list_district, list_ward
-
-def find_province(list_province, input):
-    """
-    Find province from the input\n
-    Input:    list_province : Trie - The Trie containing the provinces\n
-              input : str - The input to search\n
-    Output:            str - The likely province\n
-    """
-    return list_province.search(preprocess_string(input))
-
-def find_district(list_district, input):
-    """
-    Find district from the input\n
-    Input:    list_district : Trie - The Trie containing the districts\n
-              input : str - The input to search\n
-    Output:            str - The likely district\n
-    """
-    return list_district.search(preprocess_string(input))
-
-
-def find_ward(list_ward, input):
-    """
-    Find ward from the input\n
-    Input:    list_ward : Trie - The Trie containing the wards\n
-              input : str - The input to search\n
-    Output:            str - The likely ward\n
-    """
-    return list_ward.search(preprocess_string(input))
-   
-
-def find_address_components_brute_force(input, list_province, list_district, list_ward):
-    #process input
-    process_input = preprocess_string(input).split(" ")
-    len_input = len(process_input)
-    # load data from database
-    
-
-    province, district, ward = "", "", ""
-    province_found, ward_found = "", ""
-
-    for i in range(len_input):
-        # find province
-        if province == "":
-            province = find_province(list_province, " ".join(process_input[i:len_input]))
-            province_found = process_input[i-1:len_input]
-        # find ward
-        if ward == "":
-            ward = find_ward(list_ward, " ".join(process_input[:len_input - i]))
-            ward_found = process_input[0:len_input - i   ]
-    process_input = [item for item in process_input if item not in province_found]
-    process_input = [item for item in process_input if item not in ward_found]
-    len_input = len(process_input)
-    for i in range(len_input):
-        # find district
-        if district == "":
-            district = find_province(list_district, " ".join(process_input[i:len_input]))
-
-    return {
-        "province": province,
-        "district": district,
-        "ward": ward
+    normal_map = {
+        'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+        'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+        'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+        'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+        'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+        'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+        'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+        'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+        'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+        'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+        'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+        'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+        'đ': 'd'
+    }
+    normal_map_2 = {
+        'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+        'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+        'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+        'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+        'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+        'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+        'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+        'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+        'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+        'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+        'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+        'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+        'đ': 'd'
+    }
+    telex_map = {
+        'ă': 'aw', 'ắ': 'aws', 'ằ': 'awf', 'ẳ': 'awr', 'ẵ': 'awx', 'ặ': 'awj',
+        'â': 'aa', 'ấ': 'aas', 'ầ': 'aaf', 'ẩ': 'aar', 'ẫ': 'aax', 'ậ': 'aaj',
+        'á': 'as','á': 'as', 'à': 'af', 'ả': 'ar', 'ã': 'ax', 'ạ': 'aj',
+        'é': 'es', 'è': 'ef', 'ẻ': 'er', 'ẽ': 'ex', 'ẹ': 'ej',
+        'ê': 'ee', 'ế': 'ees', 'ề': 'eef', 'ể': 'eer', 'ễ': 'eex', 'ệ': 'eej',
+        'í': 'is', 'ì': 'if', 'ỉ': 'ir', 'ĩ': 'ix', 'ị': 'ij',
+        'ó': 'os', 'ò': 'of', 'ỏ': 'or', 'õ': 'ox', 'ọ': 'oj',
+        'ô': 'oo', 'ố': 'oos', 'ồ': 'oof', 'ổ': 'oor', 'ỗ': 'oox', 'ộ': 'ooj',
+        'ơ': 'ow', 'ớ': 'ows', 'ờ': 'owf', 'ở': 'owr', 'ỡ': 'owx', 'ợ': 'owj',
+        'ú': 'us', 'ù': 'uf', 'ủ': 'ur', 'ũ': 'ux', 'ụ': 'uj',
+        'ư': 'uw', 'ứ': 'uws', 'ừ': 'uwf', 'ử': 'uwr', 'ữ': 'uwx', 'ự': 'uwj',
+        'ý': 'ys', 'ỳ': 'yf', 'ỷ': 'yr', 'ỹ': 'yx', 'ỵ': 'yj',
+        'đ': 'dd'
     }
 
-def main(input):
-    list_province, list_district, list_ward = load_data()
-    if input_separate_algorithm == "brute_force": 
-        return measure_runtime(find_address_components_brute_force, input, list_province, list_district, list_ward)
+    def convert_to_vni(self, text):
+        """Convert Vietnamese characters to VNI encoding."""
+        return ''.join(self.normal_map.get(c, c) for c in text)
+
+    def reverse_string(self, s):
+        return s[::-1]
+
+    class TrieNode:
+        def __init__(self):
+            self.children = {}
+            self.is_end_of_word = False
+            self.full_name = None
+
+    class Trie:
+        def __init__(self, outer_instance):  # Pass outer_instance during initialization
+            self.root = Solution.TrieNode()  # Access TrieNode through Solution
+            self.outer_instance = outer_instance  # Store outer_instance
+
+        def insert(self, word, full_name):
+            node = self.root
+            for char in word:
+                if char not in node.children:
+                    node.children[char] = Solution.TrieNode()  # Access TrieNode through Solution
+                node = node.children[char]
+            node.is_end_of_word = True
+            node.full_name = full_name
+
+        def search(self, word):
+            node = self.root
+            for char in word:
+                if char in node.children:
+                    node = node.children[char]
+                else:
+                    return ""  # Không tìm thấy
+            if node.is_end_of_word:
+                return node.full_name
+            else:
+                return ""  # Không tìm thấy
+
+    def build_trie(self, file_path, type="ward"):
+        trie = self.Trie(self)  # Pass 'self' as the outer_instance
+        with open(file_path, 'r', encoding='utf-8') as file:
+            lines = []
+            for line in file:
+                full_name = line.strip()
+                # Replace special characters with spaces and remove duplicate spaces
+                full_name_one_space = re.sub(r'[.,-]', ' ', full_name)
+                full_name_one_space = re.sub(r'\s+', ' ', full_name_one_space).strip()
+                normalized_name = self.reverse_string(self.convert_to_vni(full_name_one_space.lower()))
+                lines.append((normalized_name, full_name))
+            for line in lines:
+                trie.insert(line[0], line[1])  # Store the original full_name
+                if type == "province":
+                    trie.insert(line[0]+"t", line[1])
+                if len(normalized_name) > 3:
+                    # Generate and insert similar words differing by one to 2 characters
+                    similar_words = self.generate_similar_words(normalized_name, max_distance=1)
+                    for word in similar_words: 
+                        if word not in lines:
+                            trie.insert(word, line[1])
+            for line in lines:
+                trie.insert(line[0].replace(" ", ""), line[1])
+        return trie
+
+    def build_trie_with_abbreviations(self, file_path, type = "ward"):
+        trie = self.build_trie(file_path, type=type)
+        # Adding common abbreviations
+        abbreviations = {
+            "hcm": "Hồ Chí Minh",
+            "tphcm": "Hồ Chí Minh",
+            "hn": "Hà Nội",
+        }
+        for abbr, full_name in abbreviations.items():
+            normalized_abbr = self.reverse_string(self.convert_to_vni(abbr))
+            trie.insert(normalized_abbr, full_name)
+
+            if len(normalized_abbr) > 3:
+                # Generate and insert similar words differing by one to 2 characters
+                similar_words = self.generate_similar_words(normalized_abbr, max_distance=1)
+                for word in similar_words:
+                    trie.insert(word, full_name)
+        return trie
+
+    def generate_similar_words(self, word, max_distance=1):
+        """Generate words that differ by 1 to max_distance characters."""
+        similar_words = set()
+        for dist in range(1, max_distance + 1):
+            self._generate_similar_words_helper(word, dist, similar_words)
+        return list(similar_words)
+
+    def _generate_similar_words_helper(self, word, distance, similar_words):
+        """Helper function to generate words with a specific edit distance."""
+        if distance == 0:
+            similar_words.add(word)
+            return
+
+        for i in range(len(word)):
+            for c in 'abcdefghijklmnopqrstuvwxyz0123456789':  # Including digits for more flexibility
+                if c != word[i]:
+                    similar_word = word[:i] + c + word[i+1:]
+                    self._generate_similar_words_helper(similar_word, distance - 1, similar_words)
+
+    def normalize_input(self, address):
+        """Normalize the address by removing special characters and unwanted keywords, then convert to VNI format."""
+        # Convert the string to lowercase
+        address = address.lower()
+
+        # Remove specific keywords, including those with diacritics
+        keywords = ["x", "tx", "tt", "h", "tp", "q", "p",
+                    "xa", "xã", "thi xa", "thị xã", "thi tran", "thị trấn",
+                    "huyen", "huyện", "tinh", "tỉnh", "thanh pho", "thành phố",
+                     "quận", "phuong", "phường", "t"]
+        pattern = r'\b(?:' + '|'.join(keywords) + r')\b'
+        address = re.sub(pattern, ' ', address).strip()
+
+        force_remove = ["thị xã", "thi tran", "thị trấn",
+                    "huyện", "tỉnh", "thanh pho", "thành phố",
+                    "quận", "phường"]
+        for word in force_remove:
+            address = address.replace(word, ' ')
+
+        # Remove only "p" and "q" when followed by one or two digits, leave the digits alone
+        pattern_pq_digit = r'\b([pq])(\d{1,2})\b'
+        address = re.sub(pattern_pq_digit, r'\2', address).strip()
+        
+        # Replace special characters with spaces
+        address = re.sub(r'[.,-]', ' ', address)
+        # Remove duplicate spaces
+        address = re.sub(r'\s+', ' ', address).strip()
+
+         
+
+        # Convert to VNI format
+        normalized = self.convert_to_vni(address).strip()
+        # Reverse the normalized string
+        reversed_normalized = self.reverse_string(normalized)
+        return reversed_normalized
+
+    def search_and_update(self, trie, words, search_type):
+        """
+        Search for the best match in the trie for a concatenation of up to 4 words.
+        If a match is found, return the match and the remaining words after the match.
+        """
+        max_words = 4
+        for i in range(len(words)):
+            for j in range(i + 1, min(i + 1 + max_words, len(words) + 1)):
+                search_string = ' '.join(words[i:j])  # Join words with spaces
+                match = trie.search(search_string)
+                if match:
+                    return match, words[:i] + words[j:]
+        return "", words
+
+    def search_ward(self, trie, words):
+        """
+        Search for the best match for the ward in the trie by gradually increasing the number of words joined.
+        """
+        longest_match = ""
+        for i in range(len(words)):
+            search_string = ' '.join(words[:i + 1])  # Join words with spaces
+            ward_match = trie.search(search_string)
+            #print(f"*** search_ward: {search_string}")
+            if ward_match:
+                longest_match = ward_match
+        return longest_match
+
+    def split_address(self, trie_province, trie_district, trie_ward, address):
+        normalized_address = self.normalize_input(address)
+        print(f"= normalized_address: {normalized_address}")
+        province, district, ward = None, None, None
+        # Split the reversed normalized input into words
+        words = normalized_address.split()
+        # Search for province
+        province, remaining_words = self.search_and_update(trie_province, words, "province")
+        if province:
+            words = remaining_words
+        # Search for district
+        district, remaining_words = self.search_and_update(trie_district, words, "district")
+        if district:
+            words = remaining_words
+        # Search for ward
+        ward = self.search_ward(trie_ward, words)
+        print(f"= address: {address}")
+        print(f"= province: {province}")
+        print(f"= district: {district}")
+        print(f"= ward: {ward}")
+        print(f"=============================")
+        return ward, district, province
+
+
+    def process(self, s: str):
+        # write your process string here
+        ward, district, province = self.split_address(self.trie_province, self.trie_district, self.trie_ward, s)
+        return {
+            "province": province,
+            "district": district,
+            "ward": ward,
+        }
     
+# NOTE: DO NOT change this cell
+# This cell is for scoring
+import datetime
+TEAM_NAME = 'DEFAULT_NAME'  # This should be your team name
+current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+EXCEL_FILE = f'{TEAM_NAME}_{current_time}.xlsx'
 
-if __name__ == '__main__':
+import json
+import time
+with open('test.json') as f:
+    data = json.load(f)
 
-    input = "Xã Bình Phan, huyện Chợ Gạo, tỉnh Tiền Giang"
-    
-    search_algorithm = "edit_distance"
-    result, runtime = main(input)   
+summary_only = True
+df = []
+solution = Solution()
+timer = []
+correct = 0
+for test_idx, data_point in enumerate(data):
+    address = data_point["text"]
 
-    if debug == "VERBOSE":
-        print(get_all_parameters())
-        print(f"Result: {result}")
-        print(f"Runtime: {runtime} seconds")
+    ok = 0
+    try:
+        start = time.perf_counter_ns()
+        result = solution.process(address)
+        answer = data_point["result"]
+        finish = time.perf_counter_ns()
+        timer.append(finish - start)
+        ok += int(answer["province"] == result["province"])
+        ok += int(answer["district"] == result["district"])
+        ok += int(answer["ward"] == result["ward"])
+        df.append([
+            test_idx,
+            address,
+            answer["province"],
+            result["province"],
+            int(answer["province"] == result["province"]),
+            answer["district"],
+            result["district"],
+            int(answer["district"] == result["district"]),
+            answer["ward"],
+            result["ward"],
+            int(answer["ward"] == result["ward"]),
+            ok,
+            timer[-1] / 1_000_000_000,
+        ])
+    except Exception as e:
+        df.append([
+            test_idx,
+            address,
+            answer["province"],
+            "EXCEPTION",
+            0,
+            answer["district"],
+            "EXCEPTION",
+            0,
+            answer["ward"],
+            "EXCEPTION",
+            0,
+            0,
+            0,
+        ])
+        # any failure count as a zero correct
+        pass
+    correct += ok
 
-    search_algorithm = "lavenshtein"
-    result, runtime = main(input)   
 
-    if debug == "VERBOSE":
-        print(get_all_parameters())
-        print(f"Result: {result}")
-        print(f"Runtime: {runtime} seconds")
+    if not summary_only:
+        # responsive stuff
+        print(f"Test {test_idx:5d}/{len(data):5d}")
+        print(f"Correct: {ok}/3")
+        print(f"Time Executed: {timer[-1] / 1_000_000_000:.4f}")
+
+
+print(f"-"*30)
+total = len(data) * 3
+score_scale_10 = round(correct / total * 10, 2)
+if len(timer) == 0:
+    timer = [0]
+max_time_sec = round(max(timer) / 1_000_000_000, 4)
+avg_time_sec = round((sum(timer) / len(timer)) / 1_000_000_000, 4)
+
+import pandas as pd
+
+df2 = pd.DataFrame(
+    [[correct, total, score_scale_10, max_time_sec, avg_time_sec]],
+    columns=['correct', 'total', 'score / 10', 'max_time_sec', 'avg_time_sec',],
+)
+
+columns = [
+    'ID',
+    'text',
+    'province',
+    'province_student',
+    'province_correct',
+    'district',
+    'district_student',
+    'district_correct',
+    'ward',
+    'ward_student',
+    'ward_correct',
+    'total_correct',
+    'time_sec',
+]
+
+df = pd.DataFrame(df)
+df.columns = columns
+
+print(f'{TEAM_NAME = }')
+print(f'{EXCEL_FILE = }')
+print(df2)
+
+writer = pd.ExcelWriter(EXCEL_FILE, engine='xlsxwriter')
+df2.to_excel(writer, index=False, sheet_name='summary')
+df.to_excel(writer, index=False, sheet_name='details')
+writer.close()
