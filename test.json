@@ -866,9 +866,9 @@
   {
     "text": "- Khu B Chu Hoà, Việt HhiPhú Thọ",
     "result": {
-      "province": "",
-      "district": "",
-      "ward": ""
+      "province": "Phú Thọ",
+      "district": "Việt Trì",
+      "ward": "Chu Hòa"
     }
   },
   {
@@ -900,14 +900,14 @@
     "result": {
       "province": "Hồ Chí Minh",
       "district": "Thủ Đức",
-      "ward": ""
+      "ward": "An Khánh"
     }
   },
   {
     "text": "L10C12 Hẻm 90, Ng, Bỉnh Khiêm, TP. Rạch Giá, Kiên Giang",
     "result": {
       "province": "Kiên Giang",
-      "district": "",
+      "district": "Rạch Giá",
       "ward": ""
     }
   },
@@ -979,8 +979,8 @@
     "text": "14.5 Block A2, The Mansion, ĐS 7,KDC 13E,Ấp 5,PP,BC, TP.HCM",
     "result": {
       "province": "Hồ Chí Minh",
-      "district": "",
-      "ward": ""
+      "district": "Bình Chánh",
+      "ward": "Phong Phú"
     }
   },
   {
@@ -1115,8 +1115,8 @@
     "text": "F2B PhanVănTr P.5,GV,TP.Hồ Chí Minh",
     "result": {
       "province": "Hồ Chí Minh",
-      "district": "",
-      "ward": ""
+      "district": "Gò Vấp",
+      "ward": "5"
     }
   },
   {
